@@ -1,0 +1,19 @@
+movie-explorer
+----
+movie-explorer is a script that allows searching for movies and looking up
+information about a particular movie. Currently, the script simply displays
+age information about the cast, including the average age. This script uses
+the TMDb API (v3) via a Python wrapper called pytmdb3, which is available at:
+https://github.com/wagnerrp/pytmdb3
+The pytmdb3 project is maintained on github by wagnerrp:
+https://github.com/wagnerrp
+and currently has one other contributor, djace. For other information about
+pytmdb3, please visit the project page linked above.
+----
+
+Usage:
+
+python movie-explorer.py 'NAME_OF_MOVIE'
+
+...where NAME_OF_MOVIE is the title of the film to search for. All other
+parameters passed to the script will be discarded.
