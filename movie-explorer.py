@@ -114,8 +114,11 @@ else:
 # selected film was released. This is the place we call the function
 # calculate_age, defined above. This is also where we internally keep track
 # of and update both the global variables running_age and unaccounted.
-print('The following is a list of the cast members with their ages at the ' \
-      'time the film was released:')
+if len(results[current].cast) is 0:
+    print('There are no cast data available.')
+else:
+    print('The following is a list of the cast members with their ages at ' \
+          'the time the film was released:')
 for i in range(len(results[current].cast)):
     if type(results[current].releasedate) is datetime.date:
         age = calculate_age(results[current].cast[i].dayofbirth,
