@@ -79,15 +79,15 @@ if len(results) is not 0:
           (len(results), ('s','')[len(results) is 1], title))
     for i in range(len(results)):
         print('[%s] "%s" (%s)' %
-              (i, results[i].title, results[i].releasedate.year))
+              (i+1, results[i].title, results[i].releasedate.year))
 else:
     print('No films matching "%s" found; exiting.' % title)
     sys.exit(1)
 
 # Here we disambiguate the results of our search, if it was successful.
-current = int(raw_input('Input the number of the desired film result: '))
+current = int(raw_input('Input the number of the desired film result: ')-1)
 while current not in range(len(results)):
-    current = int(raw_input('Invalid film result number entered; try again.'))
+    current = int(raw_input('Invalid film result number entered; try again.')-1)
 print('You have selected "%s" (%s).' %
       (results[current].title, results[current].releasedate.year))
 
