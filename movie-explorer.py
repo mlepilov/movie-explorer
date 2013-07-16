@@ -18,6 +18,7 @@
 
 # This product uses the TMDb API but is not endorsed or certified by TMDb.
 
+import datetime
 import sys
 
 try:
@@ -73,13 +74,20 @@ else:
     sys.exit(1)
 
 # Here we display the results of our search, if it is successful. Note that if
-# the search is not successful, we exit.
+# the search is not successful, we exit. We do type checking here, however
+# unpythonic that may be, because it is not documented at all what kind of
+# result the tmdb3 module writes as the releasedate of a movie for which such
+# information is not available.
 if len(results) is not 0:
     print('There is a total of %s result%s matching "%s".' %
           (len(results), ('s','')[len(results) is 1], title))
     for i in range(len(results)):
-        print('[%s] "%s" (%s)' %
-              (i+1, results[i].title, results[i].releasedate.year))
+        if type(results[i].releasedate) is datetime.date:
+            print('[%s] "%s" (%s)' %
+                  (i+1, results[i].title, results[i].releasedate.year))
+        else:
+            print('[%s] "%s" (%s)' %
+                  (i+1, results[i].title, 'Unknown'))
 else:
     print('No films matching "%s" found; exiting.' % title)
     sys.exit(1)
@@ -88,8 +96,11 @@ else:
 current = int(raw_input('Input the number of the desired film result: '))-1
 while current not in range(len(results)):
     current = int(raw_input('Invalid film result number entered; try again.'))-1
-print('You have selected "%s" (%s).' %
-      (results[current].title, results[current].releasedate.year))
+if type(results[current].releasedate) is datetime.date:
+    print('You have selected "%s" (%s).' %
+          (results[current].title, results[current].releasedate.year))
+else:
+    print('You have selected "%s" (Unknown).' % (results[current].title))
 
 # Here we print out the cast members and their ages at the time that the
 # selected film was released. This is the place we call the function
@@ -98,8 +109,12 @@ print('You have selected "%s" (%s).' %
 print('The following is a list of the cast members with their ages at the ' \
       'time the film was released:')
 for i in range(len(results[current].cast)):
-    age = calculate_age(results[current].cast[i].dayofbirth,
-                        results[current].releasedate)
+    if type(results[current].releasedate) is datetime.date:
+        age = calculate_age(results[current].cast[i].dayofbirth,
+                            results[current].releasedate)
+    else:
+        age = calculate_age(results[current].cast[i].dayofbirth,
+                            None)
     print('%s - Age %s' %
           (results[current].cast[i].name, (age, 'Unknown')[age is None]))
     if age is not None:
