@@ -93,9 +93,17 @@ else:
     sys.exit(1)
 
 # Here we disambiguate the results of our search, if it was successful.
-current = int(raw_input('Input the number of the desired film result: '))-1
+currentstr = raw_input('Input the number of the desired film result: ')
+try:
+    current = int(currentstr)-1
+except ValueError:
+    current = -1
 while current not in range(len(results)):
-    current = int(raw_input('Invalid film result number entered; try again.'))-1
+    currentstr = raw_input('Invalid film result number entered; try again: ')
+    try:
+        current = int(currentstr)-1
+    except ValueError:
+        current = -1
 if type(results[current].releasedate) is datetime.date:
     print('You have selected "%s" (%s).' %
           (results[current].title, results[current].releasedate.year))
