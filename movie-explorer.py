@@ -21,16 +21,7 @@
 import datetime
 import sys
 
-try:
-    import tmdb3
-except ImportError:
-    print('Error importing the tmdb3 module: it seems that PyTMDB3 is not ' \
-          'installed, or at least not installed correctly.')
-    sys.exit(1)
-
-# This is the unique API key for TMDb given to each developer; this particular
-# one belongs to Mikhail Lepilov.
-tmdb3.set_key('a1c96b8cef6c9961330b81bd8a508376')
+import tmdbWrap
 
 # The following is a function that calculates the age of an actor, taking as
 # input two datetime arguments (date the actor was born and date the movie
@@ -66,9 +57,9 @@ running_age = 0
 unaccounted = 0
 
 # Here we ask for a title to search for. If no title is given, we exit.
-title = raw_input('Search for the title of a film: ')
-if title is not '':
-    results = tmdb3.searchMovie(title)
+query = raw_input('Search for the title of a film: ')
+if query is not '':
+    results = tmdbWrap(query)
 else:
     print('No title given to search for; exiting.')
     sys.exit(1)
@@ -78,16 +69,19 @@ else:
 # unpythonic that may be, because it is not documented at all what kind of
 # result the tmdb3 module writes as the releasedate of a movie for which such
 # information is not available.
-if len(results) is not 0:
+
+# POSSIBLY REMOVE TYPE CHECKING
+
+if len(results.movielist) is not 0:
     print('There is a total of %s result%s matching "%s".' %
-          (len(results), ('s','')[len(results) is 1], title))
-    for i in range(len(results)):
-        if type(results[i].releasedate) is datetime.date:
+          (len(results.movielist), ('s','')[len(results.movielist) is 1], title))
+    for i in range(len(results.movielist)):
+        if type(results.movielist[i].releasedate) is datetime.date:
             print('[%s] "%s" (%s)' %
-                  (i+1, results[i].title, results[i].releasedate.year))
+                  (i+1, results.movielist[i].title, results.movielist[i].releasedate.year))
         else:
             print('[%s] "%s" (%s)' %
-                  (i+1, results[i].title, 'Unknown'))
+                  (i+1, results.movielist[i].title, 'Unknown'))
 else:
     print('No films matching "%s" found; exiting.' % title)
     sys.exit(1)
@@ -98,36 +92,36 @@ try:
     current = int(currentstr)-1
 except ValueError:
     current = -1
-while current not in range(len(results)):
+while current not in range(len(results.movielist)):
     currentstr = raw_input('Invalid film result number entered; try again: ')
     try:
         current = int(currentstr)-1
     except ValueError:
         current = -1
-if type(results[current].releasedate) is datetime.date:
+if type(results.movielist[current].releasedate) is datetime.date:
     print('You have selected "%s" (%s).' %
-          (results[current].title, results[current].releasedate.year))
+          (results.movielist[current].title, results.movielist[current].releasedate.year))
 else:
-    print('You have selected "%s" (Unknown).' % (results[current].title))
+    print('You have selected "%s" (Unknown).' % (results.movielist[current].title))
 
 # Here we print out the cast members and their ages at the time that the
 # selected film was released. This is the place we call the function
 # calculate_age, defined above. This is also where we internally keep track
 # of and update both the global variables running_age and unaccounted.
-if len(results[current].cast) is 0:
+if len(results.movielist[current].cast) is 0:
     print('There are no cast data available.')
 else:
     print('The following is a list of the cast members with their ages at ' \
           'the time the film was released:')
-for i in range(len(results[current].cast)):
-    if type(results[current].releasedate) is datetime.date:
-        age = calculate_age(results[current].cast[i].dayofbirth,
-                            results[current].releasedate)
+for i in range(len(results.movielist[current].cast)):
+    if type(results.movielist[current].releasedate) is datetime.date:
+        age = calculate_age(results.movielist[current].cast[i].birthday,
+                            results.movielist[current].releasedate)
     else:
-        age = calculate_age(results[current].cast[i].dayofbirth,
+        age = calculate_age(results.movielist[current].cast[i].birthday,
                             None)
     print('%s - Age %s' %
-          (results[current].cast[i].name, (age, 'Unknown')[age is None]))
+          (results.movielist[current].cast[i].name, (age, 'Unknown')[age is None]))
     if age is not None:
         running_age = running_age + age
     else:
@@ -137,9 +131,9 @@ for i in range(len(results[current].cast)):
 # The reason why we are fussing around with round() and multiplying by 1.0 is
 # that we probably want the average age rounded to the first decimal place,
 # seeing as we have one significant figure to work with.
-if len(results[current].cast) - unaccounted is not 0:
+if len(results.movielist[current].cast) - unaccounted is not 0:
     average_age = round(
-        (running_age*1.0) / (len(results[current].cast)-unaccounted), 1)
+        (running_age*1.0) / (len(results.movielist[current].cast)-unaccounted), 1)
     print('The average age of the cast in this film is %s.' % average_age)
 else:
     print('There are not enough data to determine the average age of the cast.')
