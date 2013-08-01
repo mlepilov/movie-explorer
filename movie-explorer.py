@@ -59,7 +59,7 @@ unaccounted = 0
 # Here we ask for a title to search for. If no title is given, we exit.
 query = raw_input('Search for the title of a film: ')
 if query is not '':
-    results = tmdbWrap(query)
+    results = tmdbWrap.tmdbWrap(query)
 else:
     print('No title given to search for; exiting.')
     sys.exit(1)
@@ -74,7 +74,7 @@ else:
 
 if len(results.movielist) is not 0:
     print('There is a total of %s result%s matching "%s".' %
-          (len(results.movielist), ('s','')[len(results.movielist) is 1], title))
+          (len(results.movielist), ('s','')[len(results.movielist) is 1], query))
     for i in range(len(results.movielist)):
         if type(results.movielist[i].releasedate) is datetime.date:
             print('[%s] "%s" (%s)' %
@@ -83,7 +83,7 @@ if len(results.movielist) is not 0:
             print('[%s] "%s" (%s)' %
                   (i+1, results.movielist[i].title, 'Unknown'))
 else:
-    print('No films matching "%s" found; exiting.' % title)
+    print('No films matching "%s" found; exiting.' % query)
     sys.exit(1)
 
 # Here we disambiguate the results of our search, if it was successful.
