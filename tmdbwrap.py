@@ -16,7 +16,7 @@ class tmdbWrap:
         self.__page.add_header('Accept', 'application/json')
         self.__page.lifetime = 3600
         self.__data = json.loads(self.__page.open())
-        for item in self.__data['results']
+        for item in self.__data['results']:
             self.movielist.append(Movie(item))
 
 
@@ -34,7 +34,7 @@ class Movie:
         self.releasedate = datetime.strptime(self.__data['release_date'], '%y-%m-%d')
         self.cast = populate_cast()
 
-    def populate_cast(self)
+    def populate_cast(self):
         self.__sargs = {'api_key': api_key}
         self.__url = 'http://api.themoviedb.org/3/movie/', self.id, '/cast?%s' % urlencode(self.__sargs)
         self.__page = urllib2.request(self.__url)
@@ -42,7 +42,7 @@ class Movie:
         self.__page.lifetime = 3600
         self.__data = json.loads(self.__page.open())
         self._cast = []
-        for item in self.__data['cast']
+        for item in self.__data['cast']:
             self._cast.append(Actor(item['id']))
         return self._cast
 
