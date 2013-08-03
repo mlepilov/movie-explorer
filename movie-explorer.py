@@ -23,6 +23,9 @@ import sys
 
 import tmdbWrap
 
+# TODO: Make a movie stats class with calculate_age just one of the
+# (presumably) many things we can do with an input movaie
+
 # The following is a function that calculates the age of an actor, taking as
 # input two datetime arguments (date the actor was born and date the movie
 # was shot), and giving as output the age as an integer.
