@@ -1,44 +1,38 @@
 # movie-explorer - Search for and display movie information.
 # Copyright (C) 2013 Mikhail Lepilov
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see <http://www.gnu.org/licenses/>.
 #
 # For questions or concerns, contact Mikhail Lepilov at mlepilov@gmail.com
-
+#
 # This product uses the TMDb API but is not endorsed or certified by TMDb.
 
+import math
 import datetime
 import sys
 
 import tmdbWrap
 
+
+# TODO: Take input flags and other options, like 'quiet' to not run in
+# interactive mode
 # TODO: Make a movie stats class with calculate_age just one of the
 # (presumably) many things we can do with an input movaie
 
 # The following is a function that calculates the age of an actor, taking as
 # input two datetime arguments (date the actor was born and date the movie
-# was shot), and giving as output the age as an integer.
-#
-# Note: the following is a snippet of code inspired by stackoverflow:
-# http://stackoverflow.com/questions/2217488/age-from-birthdate-in-python
-# Specifically, the inspiration was submitted by the following user:
-# http://stackoverflow.com/users/65387/mark
-#
-# All the fuss is due to handling leap years (ValueError could be better
-# handled by checking exactly what the error is, in case some variable is not
-# what we expect). Alternatively, we could have just divided by 365.25 days but
-# that is less elegant.
+# was shot), and giving as output the age as an integer. All the fuss is due to # the issue of handling leap years.
 def calculate_age(born, shot):
     if born is not None and shot is not None:
         try:
@@ -59,32 +53,37 @@ def calculate_age(born, shot):
 running_age = 0
 unaccounted = 0
 
-# Here we ask for a title to search for. If no title is given, we exit.
+# Here we ask for a title to search for.
 query = raw_input('Search for the title of a film: ')
-if query is not '':
-    results = tmdbWrap.tmdbWrap(query)
-else:
-    print('No title given to search for; exiting.')
-    sys.exit(1)
+results = tmdbWrap.tmdbWrap(query)
 
 # Here we display the results of our search, if it is successful. Note that if
-# the search is not successful, we exit. We do type checking here, however
-# unpythonic that may be, because it is not documented at all what kind of
-# result the tmdb3 module writes as the releasedate of a movie for which such
-# information is not available.
-
-# POSSIBLY REMOVE TYPE CHECKING
-
-if len(results.movielist) is not 0:
-    print('There is a total of %s result%s matching "%s".' %
-          (len(results.movielist), ('s','')[len(results.movielist) is 1], query))
-    for i in range(len(results.movielist)):
-        if type(results.movielist[i].releasedate) is datetime.date:
-            print('[%s] "%s" (%s)' %
-                  (i+1, results.movielist[i].title, results.movielist[i].releasedate.year))
-        else:
-            print('[%s] "%s" (%s)' %
-                  (i+1, results.movielist[i].title, 'Unknown'))
+# the search is not successful, we exit.
+if results.totalresults is not 0:
+    print('There is a total of %s result%s matching "%s". ' %
+          (results.totalresults, ('s','')[len(results.movielist) is 1],
+           query))
+    print('total results - %s' % results.totalresults)
+    print(results.totalresults / 20)
+    print(int(math.floor(results.totalresults / 20)))
+    for j in range(0, int(math.floor(results.totalresults / 20))+1):
+        print('Displaying results %s-%s.' %
+              (20*j+1, min(20*j+20, results.totalresults)))
+        for i in range(20*j, min(20*j+20, results.totalresults)):
+            if results.movielist[i].releasedate is not None:
+                print('[%s] "%s" (%s)' %
+                      (i+1, results.movielist[i].title,
+                       results.movielist[i].releasedate.year))
+            else:
+                print('[%s] "%s" (%s)' %
+                      (i+1, results.movielist[i].title, 'Unknown'))
+        keepgoing = None
+        if j != int(math.floor(results.totalresults / 20)):
+            while (keepgoing != 'y') and (keepgoing != 'n'):
+                keepgoing = raw_input('Display next 20 results y/n?')
+            if keepgoing == 'n':
+                break
+            results.load_next_page()
 else:
     print('No films matching "%s" found; exiting.' % query)
     sys.exit(1)
@@ -101,16 +100,19 @@ while current not in range(len(results.movielist)):
         current = int(currentstr)-1
     except ValueError:
         current = -1
-if type(results.movielist[current].releasedate) is datetime.date:
+if results.movielist[current].releasedate is not None:
     print('You have selected "%s" (%s).' %
-          (results.movielist[current].title, results.movielist[current].releasedate.year))
+          (results.movielist[current].title,
+           results.movielist[current].releasedate.year))
 else:
-    print('You have selected "%s" (Unknown).' % (results.movielist[current].title))
+    print('You have selected "%s" (Unknown).' %
+          (results.movielist[current].title))
+
+
+results.movielist[current].populate_cast()
 
 # Here we print out the cast members and their ages at the time that the
-# selected film was released. This is the place we call the function
-# calculate_age, defined above. This is also where we internally keep track
-# of and update both the global variables running_age and unaccounted.
+# selected film was released.
 if len(results.movielist[current].cast) is 0:
     print('There are no cast data available.')
 else:
@@ -124,7 +126,8 @@ for i in range(len(results.movielist[current].cast)):
         age = calculate_age(results.movielist[current].cast[i].birthday,
                             None)
     print('%s - Age %s' %
-          (results.movielist[current].cast[i].name, (age, 'Unknown')[age is None]))
+          (results.movielist[current].cast[i].name,
+          (age, 'Unknown')[age is None]))
     if age is not None:
         running_age = running_age + age
     else:
@@ -136,7 +139,8 @@ for i in range(len(results.movielist[current].cast)):
 # seeing as we have one significant figure to work with.
 if len(results.movielist[current].cast) - unaccounted is not 0:
     average_age = round(
-        (running_age*1.0) / (len(results.movielist[current].cast)-unaccounted), 1)
+        (running_age*1.0) / (len(results.movielist[current].cast)-unaccounted),
+        1)
     print('The average age of the cast in this film is %s.' % average_age)
 else:
     print('There are not enough data to determine the average age of the cast.')

@@ -1,122 +1,191 @@
-# This file contains the tmdb wrapper and associated classes used by
-# movie-explorer.py.
+# This file contains the TMDb wrapper and associated classes used by
+# movie-explorer.py, a part of movie-explorer.
+#
+# movie-explorer - Search for and display movie information.
+# Copyright (C) 2013 Mikhail Lepilov
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# For questions or concerns, contact Mikhail Lepilov at mlepilov@gmail.com
+#
+# This product uses the TMDb API but is not endorsed or certified by TMDb.
 
+import math
 import datetime
 import urllib
 import urllib2
 import json
 
-# TODO: make the wrapper not populate the cast on init, but rather after the
-# user selects the movie (otherwise program is too slow)
-# TODO: handle multiple pages of movie results
-# TODO: handle a lot of results properly (i.e. by saying so and refusing)
 
+# This class retrieves data from TMDb given a location/arguments to the API as
+# a dict. The data is stored in self.data.
 class tmdbData:
+    # These are static class vars that every query to TMDb will have.
     # This is the unique API key for TMDb given to each developer; this
     # particular one belongs to Mikhail Lepilov.
     api_key = 'a1c96b8cef6c9961330b81bd8a508376'
     base_url = 'http://api.themoviedb.org/3/'
     base_args = {'api_key': api_key}
-    data = None
 
     def __init__(self, url, **kargs):
+        # We bother initializing this in case we get any sort of error in
+        # getting data from TMDb; then we can at least init an empty object
+        self.data = None
+
+        # Here we set up the URL, fetch the page, parse the JSON, and store the
+        # data as a dict in self.data. We also handle any errors using our
+        # custom exceptions.
         self._args = dict(self.base_args, **kargs)
-        self._url = '%s%s%s' % (self.base_url, url, urllib.urlencode(self._args))
+        self._url = '%s%s%s' % \
+                     (self.base_url, url, urllib.urlencode(self._args))
         self._req = urllib2.Request(self._url)
-        print(self._url)
         self._req.add_header('Accept', 'application/json')
         self._req.lifetime = 3600
         try:
             self._page = urllib2.urlopen(self._req)
-        except HTTPError:
-            raise TmdbError(1)
+        except urllib2.HTTPError as e:
+            if e.code == 401:
+                raise TmdbError(2) # This error is thrown if the API key is
+                                   # invalid
+            elif e.code == 404:    # This error is thrown if we get bad data
+                raise TmdbError(1) # or specify an incorrect URL/id
         else:
             try:
                 self._data = json.load(self._page)
             except ValueError:
                 raise TmdbError(3)
-            else:
-                if 'status_code' in self._data:
-                    if self._data['status_code'] == 7:
-                        raise TmdbError(2)
-                    elif self._data['status_code'] == 6:
-                        raise TmdbError(4)
-                else:
-                    self.data = self._data
+            self.data = self._data
 
 
+# This class serves as a general wrapper for interacting with the TMDb API: it
+# takes a search argument, conducts a search for movies using the tmdbData
+# class, retrieves the first page of results (if any) as a list of Movie class
+# objects, and handles any errors using our custom exceptions. Movie results
+# are given at 20 per page by the API and are sorted by relevance. To get the
+# next page of results, there is a defined load_next_page method.
 class tmdbWrap:
-    movielist = []
-
     def __init__(self, query):
+        # We bother initializing this in case we get any sort of error in
+        # getting data from TMDb; then we can at least init an empty object
+        self.query = query
+        self.movielist = []
+        self.totalresults = 0
+
         try:
-            self._returned = tmdbData('search/movie?', query=query, include_adult=False)
+            self._returned = tmdbData('search/movie?',
+                                      query=self.query, include_adult=False)
         except TmdbError:
-            raise
+            pass
+        else:
+            for item in self._returned.data['results']:
+                self.movielist.append(Movie(item['id']))
+            self.totalresults = self._returned.data['total_results']
+
+    # This is the method that fetches the next page of movie results, if any,
+    # and handles any errors using our custom exceptions.
+    def load_next_page(self):
+        try:
+            self._returned = tmdbData('search/movie?', query=self.query,
+               include_adult=False,
+               page=int(math.ceil(len(self.movielist)/20)+1))
+        except TmdbError:
+            pass
         else:
             for item in self._returned.data['results']:
                 self.movielist.append(Movie(item['id']))
 
 
+# This class takes an integer 'id' argument, corresponding to a TMDb movie id,
+# and fetches movie data using the tmdbData class. It handles any errors using
+# our custom exceptions. The instance object 'cast' is not populated right away
+# (because doing so would be too slow, as TMDb rate-limits queries to 10 per
+# second), but rather using the populate_cast() method. Again we use the
+# tmdbData class for retrieving movie data.
 class Movie:
-    id = None
-    title = None
-    originaltitle = None
-    releasedate = None
-    cast = []
-
     def __init__(self, id):
+        # We bother initializing these in case we get any sort of error in
+        # getting data from TMDb; then we can at least init an empty object.
+        self.id = None
+        self.title = None
+        self.originaltitle = None
+        self.cast = []
+
         try:
             self._returned = tmdbData('movie/%s?' % id)
         except TmdbError:
-            raise
+            pass
         else:
             self.id = self._returned.data['id']
             self.title = self._returned.data['title']
             self.originaltitle = self._returned.data['original_title']
+            self.cast = []
             try:
-                self.releasedate = datetime.datetime.strptime(self._returned.data['release_date'], '%Y-%m-%d').date()
+                self.releasedate = datetime.datetime.strptime( \
+                    self._returned.data['release_date'], '%Y-%m-%d').date()
             except (ValueError, TypeError):
                 self.releasedate = None
-            try:
-                self.cast = self.populate_cast()
-            except TmdbError:
-                raise
-            
+
+    # This method populates the instance object 'cast' using the tmdbData
+    # class, handling any errors using our custom exceptions.
     def populate_cast(self):
         self._cast = []
         try:
             self._returned = tmdbData('movie/%s/casts?' % self.id)
         except TmdbError:
-            raise
+            pass
         else:
             for item in self._returned.data['cast']:
                 self._cast.append(Person(item['id']))
-        return self._cast
+        self.cast = self._cast
 
 
+# This class takes an integer 'id' argument, corresponding to a TMDb person id,
+# and fetches person data using the tmdbData class. It handles any errors using
+# our custom exceptions. Again, we use the tmdbData class for retrieving movie
+# data.
 class Person:
-    name = None
-    birthday = None
-
     def __init__(self, id):
+        # We bother initializing these in case we get any sort of error in
+        # getting data from TMDb; then we can at least init an empty object
+        self.id = None
+        self.name = None
+        self.birthday = None
+
         try:
             self._returned = tmdbData('person/%s?' % id)
         except TmdbError:
-            raise
+            pass
         else:
+            self.id = self._returned.data['id']
             self.name = self._returned.data['name']
             try:
-                self.birthday = datetime.datetime.strptime(self._returned.data['birthday'], '%Y-%m-%d').date()
+                self.birthday = datetime.datetime.strptime( \
+                    self._returned.data['birthday'], '%Y-%m-%d').date()
             except (ValueError, TypeError):
                 self.birthday = None
 
 
+# This is our custom exception class; errors 1 and 2 correspond to an HTTPError
+# exception obtained when trying to use urllib.Request. (Specifically, 1
+# corresponds to HTTP error '404' and 2 corresponds to HTTP error '401'.) Error
+# 3 corresponds to a malformed data given by the server but without an HTTP
+# error.
 class TmdbError(Exception):
-    errors = { 1: 'Cannot establish a connection to TMDb.',
-               2: 'Cannot get data: invalid API key.',
-               3: 'Cannot get data: invalid request.',
-               4: 'Cannot get data: invalid ID.' }
+    errors = { 1: 'Cannot get data from TMDb: no internet connection ' \
+                  'or bad URL specified.',
+               2: 'Cannot get data from TMDb: invalid API key.',
+               3: 'Cannot get data from TMDb: bad URL specified.' }
 
     def __init__(self, error):
         self.error = error
