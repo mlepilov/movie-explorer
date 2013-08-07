@@ -1,5 +1,5 @@
-# This file contains the TMDb wrapper and associated classes used by
-# movie-explorer.py, a part of movie-explorer.
+# This file contains the TMDb wrapper and associated classes used by the
+# movie-explorer module, a part of movie-explorer.
 #
 # movie-explorer - Search for and display movie information.
 # Copyright (C) 2013 Mikhail Lepilov
@@ -59,7 +59,11 @@ class tmdbData:
                 raise TmdbError(2) # This error is thrown if the API key is
                                    # invalid
             elif e.code == 404:    # This error is thrown if we get bad data
-                raise TmdbError(1) # or specify an incorrect URL/id
+                raise TmdbError(3) # or specify an incorrect URL/id
+        except urllib2.URLError as e:
+            if e.__class__.__name__ != 'HTTPError':
+                raise TmdbError(1) # This error is thrown if we cannot resolve
+                                   # the URL, among other things
         else:
             try:
                 self._data = json.load(self._page)
@@ -86,7 +90,7 @@ class tmdbWrap:
             self._returned = tmdbData('search/movie?',
                                       query=self.query, include_adult=False)
         except TmdbError:
-            pass
+            raise
         else:
             for item in self._returned.data['results']:
                 self.movielist.append(Movie(item['id']))
@@ -100,10 +104,13 @@ class tmdbWrap:
                include_adult=False,
                page=int(math.ceil(len(self.movielist)/20)+1))
         except TmdbError:
-            pass
+            raise
         else:
             for item in self._returned.data['results']:
-                self.movielist.append(Movie(item['id']))
+                try:
+                    self.movielist.append(Movie(item['id']))
+                except TmdbError:
+                    raise
 
 
 # This class takes an integer 'id' argument, corresponding to a TMDb movie id,
@@ -124,7 +131,7 @@ class Movie:
         try:
             self._returned = tmdbData('movie/%s?' % id)
         except TmdbError:
-            pass
+            raise
         else:
             self.id = self._returned.data['id']
             self.title = self._returned.data['title']
@@ -143,10 +150,13 @@ class Movie:
         try:
             self._returned = tmdbData('movie/%s/casts?' % self.id)
         except TmdbError:
-            pass
+            raise
         else:
             for item in self._returned.data['cast']:
-                self._cast.append(Person(item['id']))
+                try:
+                    self._cast.append(Person(item['id']))
+                except TmdbError:
+                    raise
         self.cast = self._cast
 
 
@@ -165,7 +175,7 @@ class Person:
         try:
             self._returned = tmdbData('person/%s?' % id)
         except TmdbError:
-            pass
+            raise
         else:
             self.id = self._returned.data['id']
             self.name = self._returned.data['name']
@@ -182,13 +192,12 @@ class Person:
 # 3 corresponds to a malformed data given by the server but without an HTTP
 # error.
 class TmdbError(Exception):
-    errors = { 1: 'Cannot get data from TMDb: no internet connection ' \
-                  'or bad URL specified.',
+    errors = { 1: 'Cannot get data from TMDb: no internet connection.',
                2: 'Cannot get data from TMDb: invalid API key.',
                3: 'Cannot get data from TMDb: bad URL specified.' }
 
     def __init__(self, error):
         self.error = error
 
-    def __str(self):
-        return repr(errors(self.error))
+    def __str__(self):
+        return self.errors[self.error]

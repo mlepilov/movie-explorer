@@ -1,13 +1,48 @@
 movie-explorer
 ----
-movie-explorer is a script that allows searching for movies and looking up
-information about a particular movie. Currently, the script simply displays
-age information about the cast, including the average age. This script uses
+movie-explorer is a program that allows searching for movies and looking up
+information about a particular movie. Currently, the program simply displays
+age information about the cast, including the average age. This program uses
 the TMDb API (v3).
 ----
 
 Usage:
 
-python movie-explorer.py
+movie-explorer has two modes: quiet and interactive. In quiet mode, the program
+will take as arguments the search keyword and the flags specifying information
+to be obtained. In interactive mode, the program will only take as arguments
+the flags specifying information to be obtained. Quiet mode assumes that the
+most relevant movie search result to the keyword is the one in question.
 
-The user will then be prompted for further directions.
+
+
+For quiet mode, run movie-explorer with the "-s 'keyword'" or
+"--search='keyword'" argument, along with any other arguments necessary; e.g.:
+
+python movie-explorer.py -a -s 'matrix'
+
+This will return any information specified (in this case, the cast average age
+calculation).
+
+
+
+For interactive mode, run movie-explorer without the -s argument, but with the
+arguments specifying information to be returned; e.g.:
+
+python movie-explorer.py -a
+
+The user will then be prompted for further directions; once the program
+finishes, it will return any information specified.
+
+
+
+This is a list of valid flags:
+-s/--search 'keyword' - Specifies that movie-explorer should run in quiet mode,
+,that it should search for 'keyword', and that it should select the movie
+result most relevant to 'keyword'.
+
+-a/--avgage - Specifies that the program should output the average age of the
+actors of the movie selected.
+
+-h/--help - Specifies that the program should output usage information and
+exit.

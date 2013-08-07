@@ -28,7 +28,7 @@ import tmdbWrap
 
 class tmdbWraptest(unittest.TestCase):
     # This is a list of queries, good and bad; testing # results
-    keywords = ( # API handles empty strings by returning 0
+    keywords = [ # API handles empty strings by returning 0
                  ('', 0),
                  # wrapper handles results 20 (i.e. one TMDb page) at a time
                  ('a', 20),
@@ -41,7 +41,7 @@ class tmdbWraptest(unittest.TestCase):
                  # typical query with a lot of results, again 20 at a time
                  ('good', 20),
                  # has special characters and a few results
-                 ('\\u0448\\u0443\\u0440\\u0438\\u043A\\u0430', 3))
+                 ('\\u0448\\u0443\\u0440\\u0438\\u043A\\u0430', 3) ]
 
     def testinit(self):
         for keyword, expected in self.keywords:
@@ -49,18 +49,19 @@ class tmdbWraptest(unittest.TestCase):
                 test = tmdbWrap.tmdbWrap(keyword)
             except tmdbWrap.TmdbError:
                 pass
-            self.assertEqual(len(test.movielist), expected)
+            else:
+                self.assertEqual(len(test.movielist), expected)
 
 
 class Movietest(unittest.TestCase):
     # This is a list of movie IDs, good and bad; testing movie id and the kind
     # of exception that the code raises if the movie ID is bad
-    movieids = ((-1, None, 1),           # bad: should give good http, no data
-                (123412341234, None, 1), # bad: should give good http, no data
-                (0, None, 1),            # bad: should give good http, no data
+    movieids = [(-1, None, 3),           # bad: should give good http, no data
+                (123412341234, None, 3), # bad: should give good http, no data
+                (0, None, 3),            # bad: should give good http, no data
                 (2757, 2757, None),      # good
                 ('', None, 3),           # bad: should give bad http
-                ('asdf', None, 1))       # bad: should give good http, no data
+                ('asdf', None, 3)]       # bad: should give good http, no data
 
     def testinit(self):
         for movieid, expected, exception in self.movieids:
@@ -68,18 +69,19 @@ class Movietest(unittest.TestCase):
                 test = tmdbWrap.Movie(movieid)
             except tmdbWrap.TmdbError as e:
                 self.assertEqual(e.error, exception)
-            self.assertEqual(test.id, expected)
+            else:
+                self.assertEqual(test.id, expected)
 
 
 class Persontest(unittest.TestCase):
     # This is a list of actor IDs, good and bad; testing actor id
     # Note: this test is identical to the one for the Movie class
-    actorids = ((-1, None, 1),
-                (123412341234, None, 1),
-                (0, None, 1),
+    actorids = [(-1, None, 3),
+                (123412341234, None, 3),
+                (0, None, 3),
                 (2963, 2963, None),
                 ('', None, 3),
-                ('asdf', None, 1))
+                ('asdf', None, 3)]
 
     def testinit(self):
         for actorid, expected, exception in self.actorids:
@@ -87,7 +89,8 @@ class Persontest(unittest.TestCase):
                 test = tmdbWrap.Person(actorid)
             except tmdbWrap.TmdbError as e:
                 self.assertEqual(e.error, exception)
-            self.assertEqual(test.id, expected)
+            else:
+                self.assertEqual(test.id, expected)
 
 
 if __name__ == '__main__':
