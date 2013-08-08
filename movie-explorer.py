@@ -23,8 +23,11 @@ import datetime
 import sys
 import getopt
 
+import utils
 import tmdbWrap
+import imdbWrap
 
+# TODO: update comments, update unit tests
 
 # The following is a function that calculates the age of a person, taking as
 # input two datetime arguments (date the actor was born and date the movie
@@ -122,7 +125,7 @@ def get_cast_avgage(movie):
     if (len(movie.cast)-unaccounted) != 0:
         return round((running_age*1.0)/(len(movie.cast)-unaccounted), 1)
     else:
-        raise MovieError(1)
+        raise utils.MovieError(1)
 
 
 # This function is used only when not in quiet mode
@@ -164,13 +167,16 @@ def main(argv):
     current = 0
     # This is the query to search for in a movie database
     query = ''
+    # This is the database wrapper to use when searching for movies; default
+    # is tmdb
+    database = 'tmdb'
     # This dict stores our calculations to be output
     toreturn = {}
 
     # Parsing user input
     try:
-        opts, args = getopt.getopt(argv[1:], 'has:', 
-                                   ['help', 'avgage', 'search='])
+        opts, args = getopt.getopt(argv[1:], 'has:d:', 
+                                   ['help', 'avgage', 'search=', 'database='])
     except getopt.GetoptError:
         print_usage()
         return None
@@ -181,6 +187,8 @@ def main(argv):
         elif opt in ('-s', '--search'):
             quiet = True
             query = arg
+        elif opt in ('-d', '--database'):
+            database = arg
         elif opt in ('-a', '--avgage'):
             cast_avgage = True
 
@@ -200,10 +208,22 @@ def main(argv):
     if query == '':
         print('No string given to search for; exiting.')
         return None
-    try:
-        results = tmdbWrap.tmdbWrap(query)
-    except tmdbWrap.TmdbError as e:
-        print(e)
+
+    if database == 'tmdb':
+        try:
+            results = tmdbWrap.tmdbWrap(query)
+        except tmdbWrap.TmdbError as e:
+            print(e)
+            return None
+    elif database == 'imdb':
+        try:
+            results = imdbWrap.imdbWrap(query)
+        except imdbWrap.ImdbError as e:
+            print(e)
+            return None
+    else:
+        print('Invalid database entered; currently, only \'tmdb\' and ' \
+              '\'imdb\' are supported.')
         return None
 
     # If no results are found, we exit. If results are found, we either pick
@@ -217,7 +237,7 @@ def main(argv):
 
     # If we cannot populate all the data for our chosen film, we exit
     try:
-        results.movielist[current].populate_cast()
+        results.movielist[current].populate_cast(database)
     except tmdbWrap.TmdbError as e:
         print(e)
         return None
@@ -227,7 +247,7 @@ def main(argv):
     if cast_avgage == True:
         try:
             _cast_avgage = get_cast_avgage(results.movielist[current])
-        except MovieError:
+        except utils.MovieError:
             _cast_avgage = None
         if quiet == False:
             print_cast_avgage(results.movielist[current], _cast_avgage)
@@ -237,17 +257,6 @@ def main(argv):
                    results.movielist[current].releasedate.year, _cast_avgage))
         toreturn.update( {'cast_avgage': _cast_avgage} )
     return toreturn
-
-
-# Our custom exception class
-class MovieError(Exception):
-    errors = { 1: 'Cannot determine the cast average age.' }
-
-    def __init__(self, error):
-        self.error = error
-
-    def __str__(self):
-        return self.errors[self.error]
 
 
 # The usual sentinel

@@ -6,14 +6,14 @@ age information about the cast, including the average age. This program uses
 the TMDb API (v3).
 ----
 
-Usage:
 
+Usage:
+----
 movie-explorer has two modes: quiet and interactive. In quiet mode, the program
 will take as arguments the search keyword and the flags specifying information
 to be obtained. In interactive mode, the program will only take as arguments
 the flags specifying information to be obtained. Quiet mode assumes that the
 most relevant movie search result to the keyword is the one in question.
-
 
 
 For quiet mode, run movie-explorer with the "-s 'keyword'" or
@@ -25,7 +25,6 @@ This will return any information specified (in this case, the cast average age
 calculation).
 
 
-
 For interactive mode, run movie-explorer without the -s argument, but with the
 arguments specifying information to be returned; e.g.:
 
@@ -33,10 +32,12 @@ python movie-explorer.py -a
 
 The user will then be prompted for further directions; once the program
 finishes, it will return any information specified.
+----
 
 
-
-This is a list of valid flags:
+Arguments:
+----
+This is a list of valid arguments:
 -s/--search 'keyword' - Specifies that movie-explorer should run in quiet mode,
 ,that it should search for 'keyword', and that it should select the movie
 result most relevant to 'keyword'.
@@ -46,3 +47,7 @@ actors of the movie selected.
 
 -h/--help - Specifies that the program should output usage information and
 exit.
+
+-d/--database - Specifies that the program should use a particular database;
+currently, 'imdb' and 'tmdb' options are supported. If this is not used, the
+program defaults to 'tmdb'.
