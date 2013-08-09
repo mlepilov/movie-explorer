@@ -27,6 +27,17 @@ import tmdbWrap
 import imdbWrap
 
 
+# This class takes an id and a database that the id belongs to and fetches
+# movie information using the appropriate wrapper (in an imdbWrap or tmdbWrap
+# class). When done fetching data it populates some class objects, like the
+# title of the movie or its release date (or initializes "None", if, for
+# example, some field is missing or has strange data). Errors are handled using
+# a custom exception class.
+#
+# After we initialize the class, we store the database used so that we have the
+# option of not mixing databases when populating the information about a movie
+# (but this can currently be done, so we can get search results using TMDb but
+# cast data using IMDb, or vice versa).
 class Movie:
     def __init__(self, id, database):
         if database == 'tmdb':
@@ -92,6 +103,7 @@ class Movie:
         self.cast = self._cast
 
 
+# Same deal as the Movie class above.
 class Person:
     def __init__(self, id, database):
         if database == 'tmdb':
@@ -124,6 +136,9 @@ class Person:
             raise MovieError(2)
 
 
+# This is our custom exception class that contains all the errors that may
+# arise when being returned incomplete data or when asking to use some
+# unrecognized database.
 class MovieError(Exception):
     errors = { 1: 'Cannot determine the cast average age.',
                2: 'Invalid movie database specified.' }

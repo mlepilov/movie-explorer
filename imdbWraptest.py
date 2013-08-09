@@ -1,4 +1,4 @@
-# This file contains unit tests for the tmdbWrap module, a part of
+# This file contains unit tests for the imdbWrap module, a part of
 # movie-explorer.
 #
 # movie-explorer - Search for and display movie information.
@@ -23,31 +23,32 @@
 
 import unittest
 
-import tmdbWrap
+import imdbWrap
 
+# TODO: Write tests for the imdb_scrape* functions
 
-class tmdbWraptest(unittest.TestCase):
+class imdbWraptest(unittest.TestCase):
     # This is a list of queries, good and bad; testing # results
     keywords = [ # API handles empty strings by returning 0
-                 ('', 0),
+                 ('', 636684),
                  # improbable query with a lot of results
-                 ('a', 10191),
+                 ('a', 27822),
                  # typical query with no results
                  ('asdfasdfjsdfjsakf', 0),
                  # has a special character, no results
                  ('_As\'fr$%@^234', 0),
                  # typical query with a few results
-                 ('adaptation', 2),
+                 ('adaptation', 12),
                  # typical query with a lot of results, again 20 at a time
-                 ('good', 361),
-                 # has special characters and a few results
-                 ('\\u0448\\u0443\\u0440\\u0438\\u043A\\u0430', 3) ]
+                 ('good', 1340),
+                 # has special characters; imdb doesn't support such queries
+                 ('\\u0448\\u0443\\u0440\\u0438\\u043A\\u0430', 0) ]
 
     def testinit(self):
         for keyword, expected in self.keywords:
             try:
-                test = tmdbWrap.tmdbWrap(keyword)
-            except tmdbWrap.TmdbError:
+                test = imdbWrap.imdbWrap(keyword)
+            except imdbWrap.ImdbError:
                 pass
             else:
                 self.assertEqual(test.totalresults, expected)

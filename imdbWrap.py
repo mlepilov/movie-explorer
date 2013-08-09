@@ -31,6 +31,20 @@ import utils
 # be scraped
 # TODO: Clean up some string code
 
+# Note: the following HTML parsers are very hacky, as they should be. Scraping
+# HTML is never a good way of consistently getting data, and while some effort
+# has been made to make sure we're looking for the right things during the
+# scraping, it is important to realize that not too much effort must be put
+# into this task as it can be rendered futile with one small change of HTML
+# output on IMDb's part.
+#
+# Thus, treat the search parser classes as black boxes; generally, they take
+# HTML, look for some basic heuristics telling that we're in the right place
+# (e.g. we found a "table" tag with the attribute "class='cast'", followed by a
+# "td" tag with the attribute "class='name'"), and scrape away.
+
+# This is an HTML parser that takes a string of HTML and returns a search
+# results dict mimicking the dict returned by parsing the JSON data from TMDb.
 class SearchParser(HTMLParser.HTMLParser):
     def __init__(self):
         self.data = { 'total_results':0, 'results': [] }
@@ -71,6 +85,8 @@ class SearchParser(HTMLParser.HTMLParser):
             self.data.update({'total_results': self._total_results })
 
 
+# This is an HTML parser that takes a string of HTML and returns a movie info
+# dict mimicking the dict returned by parsing the JSON data from TMDb.
 class MovieParser(HTMLParser.HTMLParser):
     def __init__(self):
         self.data = { 'title':'', 'release_date':'' }
@@ -95,6 +111,8 @@ class MovieParser(HTMLParser.HTMLParser):
             self.data.update({'title': data})
 
 
+# This is an HTML parser that takes a string of HTML and returns a cast info
+# dict mimicking the dict returned by parsing the JSON data from TMDb.
 class CastParser(HTMLParser.HTMLParser):
     def __init__(self):
         self.data = { 'cast': [] }
@@ -121,6 +139,8 @@ class CastParser(HTMLParser.HTMLParser):
             self._table == False
 
 
+# This is an HTML parser that takes a string of HTML and returns a person info
+# dict mimicking the dict returned by parsing the JSON data from TMDb.
 class PersonParser(HTMLParser.HTMLParser):
     def __init__(self):
         self.data = { 'name': '', 'birthday': '' }
@@ -141,7 +161,9 @@ class PersonParser(HTMLParser.HTMLParser):
             self._name = False
             self.data.update({'name': data.replace('\n','')})
 
-
+# We bother defining the imdb_scrape* functions because in the future, we plan
+# on having them raise ValueErrors if the HTML data doesn't appear to be
+# correct.
 def imdb_scrape_search(page):
     parser = SearchParser()
     parser.feed(page)
@@ -165,11 +187,19 @@ def imdb_scrape_person(page):
     parser.feed(page)
     return parser.data
 
-
+# This class retrieves data from IMDb given the type of data to retrieve: we
+# are currently distinguishing among 'search', 'cast', 'movie', and 'person'.
+# The data is stored in self.data. This class is made to mimic the tmdbData
+# class as closely as possible (perhaps in the future everything in the world
+# will be one giant class, a caste-less system, if you will)
 class imdbData:
+    # The only thing common to all IMDb queries
     base_url = 'http://www.imdb.com/'
 
     def __init__(self, id, mode, **kargs):
+        # In each data-getting mode, we set up the URL, fetch the page, and
+        # feed it to the right scraper. Maybe in the future, we can do this
+        # song and dance in one parser class or scraper function or something.
         if mode == 'search':
             self._args = { 'title': id,
                           'title_type': 'feature,tv_movie,short',
@@ -254,7 +284,16 @@ class imdbData:
                     raise ImdbError(3)
                 self.data = self._data
 
-
+# Like the tmdbWrap class in tmdbWrap.py, this class serves as a general
+# wrapper for interacting with IMDb: it takes a search argument, conducts a
+# search for movies using the imdbData class, retrieves the first page of
+# results (if any) as a list of Movie class objects, and handles any errors
+# using our custom exceptions. Movie results are asked for at 20 per page, in
+# order to make this class as much like tmdbWrap as possible (also, asking for
+# more results is asking for trouble, as it would take forever to then load
+# the individual movie HTML pages containing the data we like to have upon each
+# search). To get the next page of results, there is a defined load_next_page
+# method.
 class imdbWrap:
     def __init__(self, query):
         self.query = query
@@ -287,6 +326,10 @@ class imdbWrap:
                     raise
 
 
+# This is our custom exception class; error 1 corresponds to a URLError from
+# urllib.Request, which typically happens when we can't resolve the DNS name.
+# Error 2 corresponds to an HTTPError with code '404', and error 3 corresponds
+# to a ValueError raised by the imdb_scrape* functions.
 class ImdbError(Exception):
     errors = { 1: 'Cannot get data from IMDb: no internet connection.',
                2: 'Cannot get data from IMDb: bad URL specified.',

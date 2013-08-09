@@ -23,9 +23,10 @@
 
 import unittest
 
-import tmdbWrap
+import utils
 movieexplorer = __import__('movie-explorer')
 
+# TODO: write tests for calculate_age, different database options
 
 class maintest(unittest.TestCase):
     # This is a list of queries, good and bad
@@ -62,15 +63,15 @@ class get_cast_avgagetest(unittest.TestCase):
                  # year, no cast data ("Auto B Good - Hitting the Road")
                  (54334, None, 1) ]
 
-    # Note that we are not handling any assertion errors in the tmdbWrap
-    # 'Movie' class; for tests against that class, see tmdbWraptest.py
+    # Note that we are not handling any assertion errors in the utils 'Movie'
+    # class; for tests against that class, see utilstest.py.
     def test(self):
         for movieid, expected, exception in self.movieids:
-            movie = tmdbWrap.Movie(movieid)
-            movie.populate_cast()
+            movie = utils.Movie(movieid, 'tmdb')
+            movie.populate_cast('tmdb')
             try:
                 avgage = movieexplorer.get_cast_avgage(movie)
-            except movieexplorer.MovieError as e:
+            except utils.MovieError as e:
                 self.assertEqual(e.error, exception)
             else:
                 self.assertEqual(avgage, expected)

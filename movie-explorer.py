@@ -27,7 +27,6 @@ import utils
 import tmdbWrap
 import imdbWrap
 
-# TODO: update comments, update unit tests
 
 # The following is a function that calculates the age of a person, taking as
 # input two datetime arguments (date the actor was born and date the movie
@@ -200,6 +199,15 @@ def main(argv):
         print_usage()
         return None
 
+    # Here we test if we are even given a valid database option. This check is
+    # also done later, but we should spare the user the question of the film
+    # title if they gave us a junk database option in the first place.
+    if database != 'imdb' and database != 'tmdb':
+        print('Invalid database entered; currently, only \'tmdb\' and ' \
+              '\'imdb\' are supported.')
+        return None
+
+
     # Asking the user for the search keyword if we are in interactive mode
     if quiet == False:
         query = raw_input('Search for the title of a film: ')
@@ -209,6 +217,7 @@ def main(argv):
         print('No string given to search for; exiting.')
         return None
 
+    # Here, we query the appropriate database for the search results
     if database == 'tmdb':
         try:
             results = tmdbWrap.tmdbWrap(query)
@@ -221,10 +230,6 @@ def main(argv):
         except imdbWrap.ImdbError as e:
             print(e)
             return None
-    else:
-        print('Invalid database entered; currently, only \'tmdb\' and ' \
-              '\'imdb\' are supported.')
-        return None
 
     # If no results are found, we exit. If results are found, we either pick
     # the first (if in quiet mode), or prompt the user.

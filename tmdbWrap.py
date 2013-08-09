@@ -59,6 +59,9 @@ class tmdbData:
             elif e.code == 404:    # This error is thrown if we get bad data
                 raise TmdbError(3) # or specify an incorrect URL/id
         except urllib2.URLError as e:
+            # This is a bit of a hack but is close to what people really do in
+            # python to check if we're online (i.e. check if we can resolve
+            # some name).
             if e.__class__.__name__ != 'HTTPError':
                 raise TmdbError(1) # This error is thrown if we cannot resolve
                                    # the URL, among other things
@@ -113,11 +116,10 @@ class tmdbWrap:
                     raise
 
 
-# This is our custom exception class; errors 1 and 2 correspond to an HTTPError
-# exception obtained when trying to use urllib.Request. (Specifically, 1
-# corresponds to HTTP error '404' and 2 corresponds to HTTP error '401'.) Error
-# 3 corresponds to a malformed data given by the server but without an HTTP
-# error.
+# This is our custom exception class; errors 2 and 3 correspond to an HTTPError
+# exception obtained when trying to use urllib.Request. (Specifically, 2
+# corresponds to HTTP error '401' and 2 corresponds to HTTP error '404'.) Error
+# 1 corresponds to a URLError, typically when we can't resolve the DNS name.
 class TmdbError(Exception):
     errors = { 1: 'Cannot get data from TMDb: no internet connection.',
                2: 'Cannot get data from TMDb: invalid API key.',
